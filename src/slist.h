@@ -1,27 +1,32 @@
-#ifndef SINGLE_LIST_H_
-#define SINGLE_LIST_H_
+#ifndef UTILS_SINGLE_LINKED_LIST_H_
+#define UTILS_SINGLE_LINKED_LIST_H_
 
-typedef struct slist_t_
+struct slist
 {
-    void            * data;
-    struct slist_t_ * next;
-} slist_t;
+    void          *data;
+    struct slist *next;
+};
 
-typedef int (* func) (void * data, void * user_data);
+struct slist *
+slist_insert        (struct slist *slist, void *data);
 
-slist_t *
-slist_insert      (slist_t * slist, void * data);
+struct slist *
+slist_find          (struct slist *slist, void *data);
 
-slist_t *
-slist_find        (slist_t * slist, void * data);
+struct slist *
+slist_foreach       (struct slist *slist,
+                     int (*func)      (void *data, void *user_data),
+                     void *user_data);
 
-slist_t *
-slist_foreach     (slist_t * slist, func f, void * user_data);
-
-slist_t *
-slist_remove_if   (slist_t * slist, func f, void * data, void * user_data);
+struct slist *
+slist_remove_if     (struct slist *slist,
+                     int (*will_rm)   (void *data, void *user_data),
+                     int (*free_data) (void *data, void *user_data),
+                     void * user_data);
 
 void
-slist_cleanup     (slist_t * slist, func f, void * user_data);
+slist_cleanup       (struct slist *slist,
+                     int (*free_data) (void *data, void *user_data),
+                     void * user_data);
 
-#endif
+#endif /* UTILS_SINGLE_LIST_H_ */

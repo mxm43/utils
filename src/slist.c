@@ -3,9 +3,10 @@
 
 #include "slist.h"
 
-slist_t * slist_node_new (void * data)
+struct slist *
+slist_node_new (void *data)
 {
-    slist_t * new_node = (slist_t *) malloc (sizeof (slist_t));
+    struct slist *new_node = (struct slist *)malloc(sizeof(struct slist));
     if (new_node == NULL)
         return NULL;
 
@@ -15,72 +16,69 @@ slist_t * slist_node_new (void * data)
     return new_node;
 }
 
-void slist_node_free (slist_t * node)
+void
+slist_node_free (struct slist *node)
 {
     assert (node != NULL);
 
     free (node);
 }
 
-slist_t * slist_insert (slist_t * slist, void * data)
+struct slist *
+slist_insert (struct slist *list, void *data)
 {
-    slist_t * new_node  = slist_node_new (data);
+    struct slist *new_node  = slist_node_new (data);
 
-    new_node->next = slist;
+    new_node->next = list;
 
     return new_node;
 }
 
-slist_t * slist_find (slist_t * slist, void * data)
+struct slist *
+slist_find (struct slist *list, void *data)
 {
-    while (slist && slist->data != data)
-        slist = slist->next;
+    while (list && list->data != data)
+        list = list->next;
 
-    return slist;
+    return list;
 }
 
-slist_t * slist_foreach (slist_t * slist, func f, void * user_data)
+struct slist *
+slist_foreach      (struct slist *list,
+                    int (*func)      (void *data, void *user_data),
+                    void *user_data)
 {
-    assert (f != NULL);
+    assert (func != NULL);
 
-    slist_t * head = slist;
+    struct slist *head = list;
 
-    while (slist)
+    while (list)
     {
-        f (slist->data, user_data);
-        slist = slist->next;
+        func (list->data, user_data);
+        list = list->next;
     }
 
-    return slist;
+    return list;
 }
 
-void slist_cleanup (slist_t * slist, func f, void * user_data)
+struct slist *
+slist_remove_if (struct slist *list,
+                 int (*will_rm)   (void *data, void *user_data),
+                 int (*free_data) (void *data, void *user_data),
+                 void * user_data)
 {
-    assert (f != NULL);
+    assert (will_rm != NULL && free_data != NULL);
 
-    while (slist)
-    {
-        slist_t * next = slist->next;
-        f (slist->data, user_data);
-        slist_node_free (slist);
-        slist = next;
-    }
-}
-
-slist_t * slist_remove_if (slist_t * slist, func f, void * data, void * user_data)
-{
-    assert (f != NULL);
-
-    slist_t *  head = slist;
-    slist_t ** cur  = &head;
+    struct slist  *head = list;
+    struct slist **cur  = &head;
 
     while (*cur)
     {
-        slist_t * entry = *cur;
-        if (data == (*cur)->data)
+        struct slist *entry = *cur;
+        if (will_rm(entry->data, user_data))
         {
             *cur = entry->next;
-            f (entry->data, user_data);
+            free_data (entry->data, user_data);
             slist_node_free (entry);
         }
         else
@@ -89,3 +87,20 @@ slist_t * slist_remove_if (slist_t * slist, func f, void * data, void * user_dat
 
     return head;
 }
+
+void
+slist_cleanup (struct slist *list,
+               int (*free_data) (void *data, void *user_data),
+               void * user_data)
+{
+    assert (free_data != NULL);
+
+    while (list)
+    {
+        struct slist *next = list->next;
+        free_data (list->data, user_data);
+        slist_node_free (list);
+        list = next;
+    }
+}
+
