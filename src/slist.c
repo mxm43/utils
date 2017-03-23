@@ -3,6 +3,8 @@
 
 #include "slist.h"
 
+int depth = 0;
+
 struct slist *
 slist_node_new (void *data)
 {
@@ -44,9 +46,9 @@ slist_find (struct slist *list, void *data)
 }
 
 struct slist *
-slist_foreach      (struct slist *list,
-                    int (*func)      (void *data, void *user_data),
-                    void *user_data)
+slist_foreach (struct slist *list,
+               int (*func)      (void *data, void *user_data),
+               void *user_data)
 {
     assert (func != NULL);
 
@@ -95,12 +97,74 @@ slist_cleanup (struct slist *list,
 {
     assert (free_data != NULL);
 
-    while (list)
+    while (list != NULL)
     {
         struct slist *next = list->next;
         free_data (list->data, user_data);
         slist_node_free (list);
         list = next;
     }
+}
+
+struct slist *
+slist_merge (struct slist *list1,
+             struct slist *list2,
+             int (*compare) (void *data1, void *data2))
+{
+    assert (compare != NULL);
+
+    struct slist  *ret = NULL;
+    struct slist **cur = &ret;
+
+    while (list1 != NULL && list2 != NULL)
+    {
+        if (compare (list1->data, list2->data) < 0)
+        {
+            *cur = list1;
+            list1 = list1->next;
+        }
+        else
+        {
+            *cur = list2;
+            list2 = list2->next;
+        }
+        cur = &((*cur)->next);
+    }
+
+    if (list1 == NULL)
+        *cur = list2;
+    else
+        *cur = list1;
+
+    return ret;
+}
+
+struct slist *
+slist_sort (struct slist *list,
+            int (*compare) (void *data1, void *data2))
+{
+    assert (compare != NULL);
+
+    if (list == NULL || list->next == NULL)
+        return list;
+
+    struct slist *list1 = list;
+    struct slist *list2 = list;
+    struct slist *prev  = NULL;
+
+    for (int i = 0; list1; ++i)
+    {
+        list1 = list1->next;
+        if (i % 2 == 0)
+        {
+            prev  = list2;
+            list2 = list2->next;
+        }
+    }
+    prev->next = NULL;
+
+    return slist_merge (slist_sort (list,  compare),
+                        slist_sort (list2, compare),
+                        compare);
 }
 

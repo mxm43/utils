@@ -3,7 +3,7 @@
 
 struct slist
 {
-    void          *data;
+    void         *data;
     struct slist *next;
 };
 
@@ -23,6 +23,10 @@ slist_remove_if     (struct slist *slist,
                      int (*will_rm)   (void *data, void *user_data),
                      int (*free_data) (void *data, void *user_data),
                      void * user_data);
+
+struct slist *
+slist_sort          (struct slist *list,
+                     int (*compare) (void *data1, void *data2));
 
 void
 slist_cleanup       (struct slist *slist,
