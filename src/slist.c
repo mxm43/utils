@@ -3,8 +3,6 @@
 
 #include "slist.h"
 
-int depth = 0;
-
 struct slist *
 slist_node_new (void *data)
 {
