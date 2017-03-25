@@ -27,7 +27,7 @@ slist_node_free (struct slist *node)
 struct slist *
 slist_insert (struct slist *list, void *data)
 {
-    struct slist *new_node  = slist_node_new (data);
+    struct slist *new_node = slist_node_new (data);
 
     new_node->next = list;
 
@@ -35,30 +35,72 @@ slist_insert (struct slist *list, void *data)
 }
 
 struct slist *
-slist_find (struct slist *list, void *data)
+slist_sort_insert (struct slist *list,
+                   int (*compare)   (void *data1, void *data2),
+                   void *data)
 {
-    while (list && list->data != data)
-        list = list->next;
+    assert (compare != NULL);
+
+    struct slist *new_node = slist_node_new (data);
+
+    if (list == NULL || compare (new_node->data, list->data) < 0)
+    {
+        new_node->next = list;
+        return new_node;
+    }
+
+    struct slist *cur = list;
+    while (cur->next != NULL)
+    {
+        if (compare (new_node->data, (cur->next)->data) < 0)
+            break;
+        cur = cur->next;
+    }
+    new_node->next = cur->next;
+    cur->next = new_node;
 
     return list;
 }
 
 struct slist *
+slist_append (struct slist *list1, struct slist *list2)
+{
+    if (list1 == NULL)
+        return list2;
+
+    struct slist *cur = list1;
+    while (cur->next != NULL)
+        cur = cur->next;
+    cur->next = list2;
+
+    return list1;
+}
+
+struct slist *
+slist_find (struct slist *list,
+            int (*find) (void *data, void *user_data),
+            void *user_data)
+{
+    assert (find != NULL);
+
+    while (list && !find (list->data, user_data))
+        list = list->next;
+
+    return list;
+}
+
+void
 slist_foreach (struct slist *list,
-               int (*func)      (void *data, void *user_data),
+               int (*func) (void *data, void *user_data),
                void *user_data)
 {
     assert (func != NULL);
-
-    struct slist *head = list;
 
     while (list)
     {
         func (list->data, user_data);
         list = list->next;
     }
-
-    return list;
 }
 
 struct slist *
@@ -105,9 +147,9 @@ slist_cleanup (struct slist *list,
 }
 
 struct slist *
-slist_merge (struct slist *list1,
-             struct slist *list2,
-             int (*compare) (void *data1, void *data2))
+slist_merge_sort (struct slist *list1,
+                  struct slist *list2,
+                  int (*compare) (void *data1, void *data2))
 {
     assert (compare != NULL);
 
@@ -146,23 +188,19 @@ slist_sort (struct slist *list,
     if (list == NULL || list->next == NULL)
         return list;
 
-    struct slist *list1 = list;
-    struct slist *list2 = list;
-    struct slist *prev  = NULL;
-
-    for (int i = 0; list1; ++i)
+    struct slist *list1 = list->next, *list2 = list;
+    while ((list1 = list1->next) != NULL)
     {
         list1 = list1->next;
-        if (i % 2 == 0)
-        {
-            prev  = list2;
-            list2 = list2->next;
-        }
+        if (list1 == NULL)
+            break;
+        list2 = list2->next;
     }
-    prev->next = NULL;
+    list1 = list2->next;
+    list2->next = NULL;
 
-    return slist_merge (slist_sort (list,  compare),
-                        slist_sort (list2, compare),
-                        compare);
+    return slist_merge_sort (slist_sort (list,  compare),
+                             slist_sort (list1, compare),
+                             compare);
 }
 
